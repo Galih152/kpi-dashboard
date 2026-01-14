@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { 
   Github, Linkedin, Mail, ArrowUpRight, MapPin, 
-  Terminal, Globe, Copy, Check, Sparkles, Layers, ArrowRight
+  Terminal, Copy, Check, Sparkles, Layers, Send
 } from 'lucide-react';
 
-// --- DATA PRIBADI ---
+// --- DATA PRIBADI (Ganti Email Disini) ---
 const PORTFOLIO_DATA = {
   name: "Galih Prayudo",
+  email: "galih@example.com", // Email Anda
   role: "Full Stack Developer",
   location: "Jakarta, Indonesia",
   bio: "Membangun pengalaman web yang estetik dan performa tinggi. Fokus pada React, modern UI, dan skalabilitas.",
@@ -31,8 +32,8 @@ const PORTFOLIO_DATA = {
 
 // --- KOMPONEN KECIL ---
 
-const BentoCard = ({ children, className = "" }) => (
-  <div className={`bg-white border border-slate-200 p-6 rounded-3xl shadow-sm hover:shadow-xl hover:shadow-slate-200/50 hover:border-slate-300 transition-all duration-300 ${className}`}>
+const BentoCard = ({ children, className = "", onClick }) => (
+  <div onClick={onClick} className={`bg-white border border-slate-200 p-6 rounded-3xl shadow-sm hover:shadow-xl hover:shadow-slate-200/50 hover:border-slate-300 transition-all duration-300 relative overflow-hidden ${className}`}>
     {children}
   </div>
 );
@@ -49,7 +50,7 @@ const SocialButton = ({ icon: Icon, href }) => (
 );
 
 const TechBadge = ({ text }) => (
-  <span className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 hover:border-slate-300 transition-colors cursor-default">
+  <span className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors cursor-default">
     {text}
   </span>
 );
@@ -59,24 +60,35 @@ const App = () => {
   const [copied, setCopied] = useState(false);
 
   const handleCopyEmail = () => {
-    navigator.clipboard.writeText("email@anda.com");
+    navigator.clipboard.writeText(PORTFOLIO_DATA.email);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const scrollToBottom = () => {
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+  };
+
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-slate-800 font-sans selection:bg-indigo-100 selection:text-indigo-900 pb-20 relative overflow-hidden">
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-800 font-sans selection:bg-indigo-100 selection:text-indigo-900 pb-20 relative">
       
-      {/* Background Pattern (Dot Grid Modern) */}
+      {/* Background Pattern */}
       <div className="absolute inset-0 h-full w-full bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:24px_24px]"></div>
       
-      {/* Ambient Glow Effects (Pastel) */}
-      <div className="fixed top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-200/30 rounded-full blur-[100px] pointer-events-none mix-blend-multiply"></div>
-      <div className="fixed bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-purple-200/30 rounded-full blur-[100px] pointer-events-none mix-blend-multiply"></div>
+      {/* Navbar / Header Button */}
+      <nav className="fixed top-6 right-6 z-50">
+        <button 
+          onClick={scrollToBottom}
+          className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-full font-bold shadow-lg hover:bg-slate-800 hover:scale-105 transition-all"
+        >
+          <Mail size={16} />
+          <span>Hire Me</span>
+        </button>
+      </nav>
 
       <div className="max-w-5xl mx-auto px-6 pt-20 relative z-10">
         
-        {/* HERO SECTION */}
+        {/* HERO HEADER */}
         <header className="mb-14">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold uppercase tracking-wider mb-6">
             <span className="relative flex h-2 w-2">
@@ -99,19 +111,18 @@ const App = () => {
         {/* BENTO GRID */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
           
-          {/* 1. PHOTO / AVATAR CARD */}
+          {/* 1. PHOTO & ROLE */}
           <BentoCard className="md:col-span-2 flex items-center justify-between bg-gradient-to-br from-white to-slate-50">
              <div>
                 <p className="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-1">Role</p>
                 <h3 className="text-2xl font-bold text-slate-900">{PORTFOLIO_DATA.role}</h3>
              </div>
-             <div className="h-16 w-16 bg-slate-200 rounded-full border-4 border-white shadow-md flex items-center justify-center text-slate-400">
-               {/* Ganti ikon ini dengan <img src="foto.jpg" /> jika ada */}
-               <Sparkles size={24} />
+             <div className="h-16 w-16 bg-white rounded-full border border-slate-200 shadow-sm flex items-center justify-center text-slate-400">
+               <Sparkles size={24} className="text-indigo-500" />
              </div>
           </BentoCard>
 
-          {/* 2. LOCATION CARD */}
+          {/* 2. LOCATION */}
           <BentoCard className="md:col-span-1 flex flex-col justify-center group">
             <div className="mb-3 p-3 bg-indigo-50 w-fit rounded-xl text-indigo-600 group-hover:scale-110 transition-transform">
               <MapPin size={24} />
@@ -120,15 +131,17 @@ const App = () => {
             <p className="text-slate-900 font-bold">{PORTFOLIO_DATA.location}</p>
           </BentoCard>
 
-          {/* 3. SOCIALS (Compact) */}
-          <BentoCard className="md:col-span-1 flex flex-col justify-center items-center gap-4 bg-slate-900 text-white border-slate-900 hover:bg-slate-800 group cursor-pointer">
-             <div className="bg-white/10 p-3 rounded-full group-hover:bg-white/20 transition">
-                <Mail size={24} />
-             </div>
-             <p className="font-semibold text-sm">Contact Me</p>
-          </BentoCard>
+          {/* 3. CONTACT CARD (YANG SEKARANG LEBIH MENONJOL) */}
+          <a href={`mailto:${PORTFOLIO_DATA.email}`} className="md:col-span-1 block group">
+            <BentoCard className="h-full flex flex-col justify-center items-center gap-3 bg-slate-900 !border-slate-900 text-white cursor-pointer group-hover:bg-slate-800 transition-colors">
+               <div className="bg-white/10 p-3 rounded-full group-hover:bg-white/20 transition-colors">
+                  <Send size={24} className="group-hover:-translate-y-1 group-hover:translate-x-1 transition-transform" />
+               </div>
+               <p className="font-bold text-sm">Email Me</p>
+            </BentoCard>
+          </a>
 
-          {/* 4. TECH STACK (Wide) */}
+          {/* 4. TECH STACK */}
           <BentoCard className="md:col-span-2 md:row-span-2 flex flex-col">
              <div className="flex items-center gap-3 mb-6">
                 <div className="p-2 bg-orange-50 text-orange-600 rounded-lg">
@@ -143,15 +156,15 @@ const App = () => {
              </div>
           </BentoCard>
 
-          {/* 5. PROJECTS (Vertical List) */}
+          {/* 5. PROJECTS LIST */}
           <div className="md:col-span-2 md:row-span-2 flex flex-col gap-5">
             {PORTFOLIO_DATA.projects.map((project) => (
-              <BentoCard key={project.id} className="flex-1 flex flex-col justify-center group cursor-pointer hover:border-indigo-200">
+              <BentoCard key={project.id} className="flex-1 flex flex-col justify-center group cursor-pointer border-l-4 border-l-transparent hover:border-l-indigo-500">
                   <div className="flex justify-between items-start mb-2">
                     <span className="px-2 py-1 bg-slate-100 rounded text-[10px] font-bold uppercase text-slate-500 tracking-wide">{project.tag}</span>
-                    <ArrowUpRight className="text-slate-300 group-hover:text-indigo-600 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" size={20} />
+                    <ArrowUpRight className="text-slate-300 group-hover:text-indigo-600 transition-colors" size={20} />
                   </div>
-                  <h4 className="text-xl font-bold text-slate-900 mb-1 group-hover:text-indigo-600 transition-colors">{project.title}</h4>
+                  <h4 className="text-xl font-bold text-slate-900 mb-1">{project.title}</h4>
                   <p className="text-slate-500 text-sm mb-3">{project.desc}</p>
                   <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
                     <Layers size={12} />
@@ -161,11 +174,13 @@ const App = () => {
             ))}
           </div>
 
-          {/* 6. CALL TO ACTION */}
+          {/* 6. BIG CONTACT SECTION (FOOTER) */}
           <BentoCard className="md:col-span-4 flex flex-col md:flex-row items-center justify-between gap-6 bg-white border-dashed border-2">
             <div>
               <h3 className="text-2xl font-bold text-slate-900">Let's work together.</h3>
-              <p className="text-slate-500 text-sm mt-1">Saya selalu terbuka untuk diskusi project baru.</p>
+              <p className="text-slate-500 text-sm mt-1">
+                Kirim email ke: <span className="font-bold text-slate-900">{PORTFOLIO_DATA.email}</span>
+              </p>
             </div>
             
             <div className="flex items-center gap-3">
