@@ -12,7 +12,6 @@ const PORTFOLIO_DATA = {
   location: "Jakarta, Indonesia",
   bio: "Membangun pengalaman web yang estetik dan performa tinggi. Fokus pada React, modern UI, dan skalabilitas.",
   stack: ["React", "Next.js", "Tailwind", "TypeScript", "Node.js", "PostgreSQL", "Figma", "Docker"],
-  // DATA PROJECT (Saya tambah agar efek scroll terlihat)
   projects: [
     {
       id: 1,
@@ -54,8 +53,8 @@ const PORTFOLIO_DATA = {
 
 // --- KOMPONEN KECIL ---
 
-const BentoCard = ({ children, className = "" }) => (
-  <div className={`bg-white border border-slate-200 p-6 rounded-3xl shadow-sm hover:shadow-xl hover:shadow-slate-200/50 hover:border-slate-300 transition-all duration-300 ${className}`}>
+const BentoCard = ({ children, className = "", onClick }) => (
+  <div onClick={onClick} className={`bg-white border border-slate-200 p-6 rounded-3xl shadow-sm hover:shadow-xl hover:shadow-slate-200/50 hover:border-slate-300 transition-all duration-300 ${className}`}>
     {children}
   </div>
 );
@@ -89,16 +88,16 @@ const App = () => {
 
   const handleDownloadCV = () => {
     alert("Mengunduh CV Galih Prayudo...");
-    // window.open('/cv.pdf'); // Ganti dengan link file PDF asli nanti
+    // window.open('/cv.pdf'); 
   };
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-800 font-sans selection:bg-indigo-100 selection:text-indigo-900 pb-20 relative overflow-hidden">
       
-      {/* Background Pattern (Dot Grid Modern) */}
+      {/* Background Pattern */}
       <div className="absolute inset-0 h-full w-full bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:24px_24px]"></div>
       
-      {/* Ambient Glow Effects */}
+      {/* Glow Effects */}
       <div className="fixed top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-200/30 rounded-full blur-[100px] pointer-events-none mix-blend-multiply"></div>
       <div className="fixed bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-purple-200/30 rounded-full blur-[100px] pointer-events-none mix-blend-multiply"></div>
 
@@ -147,17 +146,16 @@ const App = () => {
             <p className="text-slate-900 font-bold">{PORTFOLIO_DATA.location}</p>
           </BentoCard>
 
-          {/* 3. DOWNLOAD CV CARD */}
-          <BentoCard className="md:col-span-1 flex flex-col justify-center items-center gap-4 bg-slate-900 text-white border-slate-900 hover:bg-slate-800 group cursor-pointer">
-             <div onClick={handleDownloadCV} className="w-full h-full flex flex-col items-center justify-center">
-                <div className="bg-white/10 p-3 rounded-full group-hover:bg-white/20 transition">
-                   <FileText size={24} />
-                </div>
-                <p className="font-semibold text-sm mt-3">Download CV</p>
+          {/* 3. RESUME CARD (Style matched to Location) */}
+          <BentoCard className="md:col-span-1 flex flex-col justify-center group cursor-pointer hover:border-indigo-300 transition-colors" onClick={handleDownloadCV}>
+             <div className="mb-3 p-3 bg-indigo-50 w-fit rounded-xl text-indigo-600 group-hover:scale-110 transition-transform">
+                <FileText size={24} />
              </div>
+             <p className="text-slate-400 text-xs font-bold uppercase">Resume</p>
+             <p className="text-slate-900 font-bold">Download PDF</p>
           </BentoCard>
 
-          {/* 4. TECH STACK (Wide) */}
+          {/* 4. TECH STACK */}
           <BentoCard className="md:col-span-2 md:row-span-2 flex flex-col">
              <div className="flex items-center gap-3 mb-6">
                 <div className="p-2 bg-orange-50 text-orange-600 rounded-lg">
