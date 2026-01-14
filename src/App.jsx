@@ -1,264 +1,223 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
-  LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell 
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+  BarChart, Bar, Cell 
 } from 'recharts';
 import { 
-  TrendingUp, Users, DollarSign, ShoppingCart, 
-  Bell, Search, Download, Filter, MoreHorizontal, ArrowUpRight, ArrowDownRight
+  LayoutDashboard, PieChart as IconPie, Users, Settings, Bell, Search, 
+  ChevronDown, Plus, ArrowUpRight, Wallet, Activity, MoreHorizontal
 } from 'lucide-react';
 
-// --- DATA DUMMY ---
-
-// Data Bulanan (Monthly)
-const monthlyData = [
-  { name: 'Jan', value: 4000 }, { name: 'Feb', value: 3000 },
-  { name: 'Mar', value: 5000 }, { name: 'Apr', value: 4500 },
-  { name: 'May', value: 6000 }, { name: 'Jun', value: 7500 },
+// --- DATA MOCKUP ---
+const salesData = [
+  { name: 'Mon', revenue: 4000, profit: 2400 },
+  { name: 'Tue', revenue: 3000, profit: 1398 },
+  { name: 'Wed', revenue: 2000, profit: 9800 },
+  { name: 'Thu', revenue: 2780, profit: 3908 },
+  { name: 'Fri', revenue: 1890, profit: 4800 },
+  { name: 'Sat', revenue: 2390, profit: 3800 },
+  { name: 'Sun', revenue: 3490, profit: 4300 },
 ];
 
-// Data Mingguan (Weekly) - untuk simulasi filter
-const weeklyData = [
-  { name: 'Mon', value: 1200 }, { name: 'Tue', value: 1400 },
-  { name: 'Wed', value: 1100 }, { name: 'Thu', value: 1800 },
-  { name: 'Fri', value: 2000 }, { name: 'Sat', value: 2400 },
-  { name: 'Sun', value: 2100 },
+const activityData = [
+  { id: 1, name: "Spotify Sub", date: "Today, 10:20 AM", amount: "-$15.00", status: "Success", img: "S" },
+  { id: 2, name: "Upwork Client", date: "Yesterday, 4:30 PM", amount: "+$850.00", status: "Income", img: "U" },
+  { id: 3, name: "Server Cost", date: "Jan 12, 2024", amount: "-$120.50", status: "Pending", img: "A" },
 ];
 
-const categoryData = [
-  { name: 'SaaS', value: 400 }, { name: 'Services', value: 300 },
-  { name: 'License', value: 300 },
-];
+// --- KOMPONEN KUSTOM ---
 
-const COLORS = ['#3b82f6', '#8b5cf6', '#ec4899'];
+const SidebarItem = ({ icon: Icon, text, active }) => (
+  <button className={`flex items-center gap-3 w-full p-3 rounded-xl transition-all duration-300 ${
+    active 
+      ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' 
+      : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+  }`}>
+    <Icon size={20} />
+    <span className="font-medium text-sm">{text}</span>
+  </button>
+);
 
-// --- KOMPONEN KECIL ---
-
-const StatCard = ({ title, value, change, icon: Icon, trend }) => (
-  <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 group">
-    <div className="flex justify-between items-start">
-      <div className={`p-3 rounded-xl ${trend === 'up' ? 'bg-blue-50' : 'bg-rose-50'}`}>
-        <Icon className={`w-6 h-6 ${trend === 'up' ? 'text-blue-600' : 'text-rose-600'}`} />
+const StatCard = ({ title, value, change, icon: Icon, color }) => (
+  <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+    <div className="flex justify-between items-start mb-4">
+      <div className={`p-3 rounded-2xl ${color}`}>
+        <Icon size={22} className="text-slate-800" />
       </div>
-      <button className="text-slate-400 hover:text-slate-600">
-        <MoreHorizontal size={20}/>
-      </button>
+      <span className="flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
+        +{change}% <ArrowUpRight size={12} />
+      </span>
     </div>
-    <div className="mt-4">
-      <p className="text-slate-500 text-sm font-medium">{title}</p>
-      <div className="flex items-baseline gap-2 mt-1">
-        <h3 className="text-2xl font-bold text-slate-900 tracking-tight">{value}</h3>
-        <span className={`flex items-center text-xs font-bold px-2 py-0.5 rounded-full ${
-          trend === 'up' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
-        }`}>
-          {trend === 'up' ? <ArrowUpRight size={12} className="mr-1"/> : <ArrowDownRight size={12} className="mr-1"/>}
-          {change}
-        </span>
-      </div>
-    </div>
+    <h3 className="text-3xl font-bold text-slate-800 tracking-tight">{value}</h3>
+    <p className="text-slate-500 text-sm mt-1">{title}</p>
   </div>
 );
 
-// --- KOMPONEN UTAMA ---
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-slate-800 text-white p-3 rounded-xl shadow-xl text-xs">
+        <p className="font-bold mb-1">{label}</p>
+        <p className="text-indigo-300">Rev: ${payload[0].value}</p>
+        <p className="text-emerald-300">Prof: ${payload[1].value}</p>
+      </div>
+    );
+  }
+  return null;
+};
 
-const KPIDashboard = () => {
-  // State untuk Interaksi
-  const [timeRange, setTimeRange] = useState('Monthly'); // Monthly atau Weekly
-  const [chartData, setChartData] = useState(monthlyData);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [notifications, setNotifications] = useState(3);
-  
-  // Efek ganti data saat tombol filter diklik
-  useEffect(() => {
-    if (timeRange === 'Weekly') {
-      setChartData(weeklyData);
-    } else {
-      setChartData(monthlyData);
-    }
-  }, [timeRange]);
+// --- LAYOUT UTAMA ---
 
-  // Fungsi: Handle Search (Simulasi filter visual)
-  const stats = [
-    { id: 1, title: "Total Revenue", value: "$128,430", change: "12.5%", icon: DollarSign, trend: "up" },
-    { id: 2, title: "Active Users", value: "42,105", change: "18.2%", icon: Users, trend: "up" },
-    { id: 3, title: "Conversion", value: "3.24%", change: "2.1%", icon: TrendingUp, trend: "down" },
-    { id: 4, title: "Sales Count", value: "1,240", change: "4.3%", icon: ShoppingCart, trend: "up" },
-  ];
-
-  // Filter kartu berdasarkan pencarian
-  const filteredStats = stats.filter(stat => 
-    stat.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Fungsi: Handle Download
-  const handleDownload = () => {
-    alert("Memproses laporan PDF... (Simulasi)");
-  };
+const App = () => {
+  const [activeTab, setActiveTab] = useState('Overview');
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-blue-100">
+    <div className="flex h-screen bg-[#F8FAFC] font-sans text-slate-800 overflow-hidden">
       
-      <main className="p-6 lg:p-10 max-w-7xl mx-auto">
-        
-        {/* Header Navigation */}
-        <nav className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
-          <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Dashboard Overview</h1>
-            <p className="text-slate-500 mt-1">Pantau performa bisnis dengan tampilan bersih.</p>
+      {/* 1. SIDEBAR (Modern Clean) */}
+      <aside className="w-64 bg-white border-r border-slate-100 flex-col justify-between hidden md:flex p-6">
+        <div>
+          <div className="flex items-center gap-2 mb-10 px-2">
+            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">K</div>
+            <span className="text-xl font-bold tracking-tight">KpiDash.</span>
           </div>
-          
-          <div className="flex items-center gap-3">
-            {/* Search Bar Berfungsi */}
-            <div className="relative group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 group-focus-within:text-blue-500 transition-colors" />
-              <input 
-                type="text" 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Cari metric..." 
-                className="bg-white border border-slate-200 rounded-xl py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-64 shadow-sm transition-all"
-              />
-            </div>
 
-            {/* Tombol Notifikasi Berfungsi */}
-            <button 
-              onClick={() => setNotifications(0)}
-              className="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition relative shadow-sm"
-            >
-              <Bell size={20} className="text-slate-600" />
-              {notifications > 0 && (
-                <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white animate-pulse"></span>
-              )}
-            </button>
-
-             {/* Tombol Download Berfungsi */}
-            <button 
-              onClick={handleDownload}
-              className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition shadow-lg shadow-slate-900/20"
-            >
-              <Download size={16} />
-              <span>Export</span>
-            </button>
-          </div>
-        </nav>
-
-        {/* KPI Cards Grid (Dinamis berdasarkan Search) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {filteredStats.length > 0 ? (
-            filteredStats.map((stat) => (
-              <StatCard key={stat.id} {...stat} />
-            ))
-          ) : (
-            <div className="col-span-4 text-center py-10 bg-white rounded-2xl border border-slate-200 border-dashed">
-              <p className="text-slate-500">Data "{searchQuery}" tidak ditemukan.</p>
-            </div>
-          )}
+          <nav className="space-y-2">
+            <SidebarItem icon={LayoutDashboard} text="Overview" active={true} />
+            <SidebarItem icon={IconPie} text="Analytics" />
+            <SidebarItem icon={Wallet} text="Finance" />
+            <SidebarItem icon={Users} text="Customers" />
+          </nav>
         </div>
 
-        {/* Chart Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          {/* Main Area Chart */}
-          <div className="lg:col-span-2 bg-white border border-slate-200 p-6 rounded-3xl shadow-sm">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h4 className="text-lg font-bold text-slate-900">Revenue Trends</h4>
-                <p className="text-sm text-slate-500">Perbandingan performa periode ini.</p>
-              </div>
-              
-              {/* Tombol Filter Chart Berfungsi */}
-              <div className="flex bg-slate-100 p-1 rounded-lg">
-                <button 
-                  onClick={() => setTimeRange('Weekly')}
-                  className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                    timeRange === 'Weekly' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                  }`}
-                >
-                  Weekly
-                </button>
-                <button 
-                  onClick={() => setTimeRange('Monthly')}
-                  className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                    timeRange === 'Monthly' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                  }`}
-                >
-                  Monthly
-                </button>
-              </div>
-            </div>
+        <div className="mt-auto">
+          <div className="bg-indigo-50 p-4 rounded-2xl mb-4">
+            <p className="text-xs font-semibold text-indigo-900 mb-2">Pro Plan</p>
+            <p className="text-xs text-indigo-700 mb-3">Akses semua fitur premium dashboard.</p>
+            <button className="w-full bg-indigo-600 text-white py-2 rounded-lg text-xs font-semibold hover:bg-indigo-700 transition">Upgrade</button>
+          </div>
+          <SidebarItem icon={Settings} text="Settings" />
+        </div>
+      </aside>
 
-            <div className="h-80 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData}>
-                  <defs>
-                    <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                  <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} dy={10} />
-                  <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} dx={-10} tickFormatter={(value) => `$${value}`} />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                    itemStyle={{ color: '#1e293b', fontWeight: 'bold' }}
-                  />
-                  <Area type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
-                </AreaChart>
-              </ResponsiveContainer>
+      {/* 2. MAIN CONTENT AREA */}
+      <main className="flex-1 overflow-y-auto">
+        <div className="p-8 max-w-7xl mx-auto">
+          
+          {/* Top Bar */}
+          <header className="flex justify-between items-center mb-10">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900">Selamat Pagi, Galih! 👋</h1>
+              <p className="text-slate-500 text-sm">Berikut update performa bisnis hari ini.</p>
             </div>
+            
+            <div className="flex items-center gap-4">
+              <div className="relative hidden md:block">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                <input type="text" placeholder="Search..." className="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-full text-sm focus:ring-2 focus:ring-indigo-500 outline-none w-64 transition shadow-sm" />
+              </div>
+              <button className="p-2 bg-white rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm relative">
+                <Bell size={20} />
+                <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-rose-500 border-2 border-white rounded-full"></span>
+              </button>
+              <div className="w-10 h-10 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-full border-2 border-white shadow-md"></div>
+            </div>
+          </header>
+
+          {/* Stats Grid (Bento Style) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <StatCard title="Total Balance" value="$54,230" change="12" icon={Wallet} color="bg-indigo-100" />
+            <StatCard title="Active Users" value="8,540" change="8.2" icon={Users} color="bg-orange-100" />
+            <StatCard title="Conversion Rate" value="4.35%" change="2.1" icon={Activity} color="bg-emerald-100" />
           </div>
 
-          {/* Pie Chart */}
-          <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-sm flex flex-col justify-between">
-            <div>
-              <h4 className="text-lg font-bold text-slate-900 mb-2">Sources</h4>
-              <p className="text-sm text-slate-500 mb-6">Distribusi pendapatan per kategori.</p>
-              
-              <div className="h-60 relative">
-                 {/* Center Text Trick */}
-                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="text-center">
-                      <span className="text-3xl font-bold text-slate-900 block">85%</span>
-                      <span className="text-xs text-slate-500">Growth</span>
-                    </div>
-                 </div>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={categoryData}
-                      innerRadius={65}
-                      outerRadius={85}
-                      paddingAngle={5}
-                      dataKey="value"
-                      cornerRadius={6}
-                    >
-                      {categoryData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} strokeWidth={0} />
-                      ))}
-                    </Pie>
-                    <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
-                  </PieChart>
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            {/* BIG CHART */}
+            <div className="lg:col-span-2 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="font-bold text-lg text-slate-800">Revenue Analytics</h3>
+                <div className="flex gap-2 bg-slate-50 p-1 rounded-lg">
+                  <button className="px-3 py-1 bg-white shadow-sm rounded-md text-xs font-semibold text-slate-800">Weekly</button>
+                  <button className="px-3 py-1 text-xs font-medium text-slate-500 hover:text-slate-800 transition">Monthly</button>
+                </div>
+              </div>
+              <div className="h-72 w-full">
+                <ResponsiveContainer>
+                  <AreaChart data={salesData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.2}/>
+                        <stop offset="95%" stopColor="#4f46e5" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="colorProf" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} dy={10} />
+                    <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Area type="monotone" dataKey="revenue" stroke="#4f46e5" strokeWidth={3} fillOpacity={1} fill="url(#colorRev)" />
+                    <Area type="monotone" dataKey="profit" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorProf)" />
+                  </AreaChart>
                 </ResponsiveContainer>
               </div>
             </div>
 
-            <div className="space-y-3 mt-4">
-              {categoryData.map((item, i) => (
-                <div key={i} className="flex justify-between items-center text-sm p-3 bg-slate-50 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i] }}></div>
-                    <span className="font-medium text-slate-700">{item.name}</span>
-                  </div>
-                  <span className="font-bold text-slate-900">{item.value} deals</span>
+            {/* RIGHT COLUMN (Activity & Card) */}
+            <div className="space-y-6">
+              
+              {/* Virtual Card Widget */}
+              <div className="bg-gradient-to-br from-slate-900 to-slate-800 p-6 rounded-3xl text-white shadow-xl shadow-slate-200">
+                <div className="flex justify-between items-center mb-8">
+                  <span className="text-xs font-medium text-slate-300">Business Corp.</span>
+                  <Wallet size={20} className="text-slate-300" />
                 </div>
-              ))}
+                <div className="mb-4">
+                  <p className="text-sm text-slate-400">Total Balance</p>
+                  <h3 className="text-3xl font-bold">$24,500.00</h3>
+                </div>
+                <div className="flex gap-3 mt-6">
+                  <button className="flex-1 bg-white text-slate-900 py-2 rounded-xl text-sm font-bold hover:bg-slate-100 transition">Withdraw</button>
+                  <button className="p-2 bg-slate-700 rounded-xl hover:bg-slate-600 transition"><Plus size={20}/></button>
+                </div>
+              </div>
+
+              {/* Recent Activity List */}
+              <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+                <div className="flex justify-between items-center mb-4">
+                  <h4 className="font-bold text-slate-800">Recent Activity</h4>
+                  <button className="text-indigo-600 text-xs font-semibold hover:underline">See All</button>
+                </div>
+                <div className="space-y-4">
+                  {activityData.map((item) => (
+                    <div key={item.id} className="flex items-center justify-between group cursor-pointer">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-sm font-bold text-slate-600 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition">
+                          {item.img}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-800">{item.name}</p>
+                          <p className="text-xs text-slate-400">{item.date}</p>
+                        </div>
+                      </div>
+                      <span className={`text-sm font-bold ${item.status === 'Income' ? 'text-emerald-600' : 'text-slate-800'}`}>
+                        {item.amount}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
             </div>
           </div>
-
         </div>
       </main>
     </div>
   );
 };
 
-export default KPIDashboard;
+export default App;
